@@ -48,7 +48,7 @@ if __name__ == "__main__":
 	parser.add_argument("--noise_clip", default=0.5, type=float)		# Range to clip target policy noise
 	parser.add_argument("--policy_freq", default=2, type=int)			# Frequency of delayed policy updates
 	parser.add_argument("--explore_rate", default=1, type=float)
-	parser.add_argument("--m", default=5, type=float)					# The number of training episodes for measuring training stability
+	parser.add_argument("--m", default=5, type=int)					# The number of training episodes for measuring training stability
 
 
 	args = parser.parse_args()
@@ -80,12 +80,12 @@ if __name__ == "__main__":
 	}
 
 	# Initialize policy
-	if args.policy_name == "TD3": 
+	if args.policy_name == "TD3AEP": 
 		# Target policy smoothing is scaled wrt the action scale
 		kwargs["policy_noise"] = args.policy_noise * max_action
 		kwargs["noise_clip"] = args.noise_clip * max_action
 		kwargs["policy_freq"] = args.policy_freq
-		policy = TD3.TD3(**kwargs)
+		policy = TD3AEP.TD3(**kwargs)
 
 	replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 	
@@ -132,23 +132,20 @@ if __name__ == "__main__":
 			episode_timesteps = 0
 			episode_num += 1 
 
-
-
 		# Evaluate episode
 		if (t + 1) % args.eval_freq == 0:
 			evaluations.append(eval_policy(policy, args.env_name, args.seed))
 			np.save("./results/%s" % (file_name), evaluations)
 
 
-		if t > 2e5:
-		# Ant：2e4
+		if t > 1e5:
 
 			temp = evaluations[(len(evaluations) - (args.m-1)):len(evaluations)]
 			temp = (temp - min(temp))/(max(temp) - min(temp))
 
 			temp_var = np.var(temp)
 			args.explore_rate = - math.log(temp_var)
-			#Ant：args.explore_rate = - 0.6 * math.log(temp_var)
+			#Ant, Walker2d: args.explore_rate = - 0.6 * math.log(temp_var)
 
 
 
